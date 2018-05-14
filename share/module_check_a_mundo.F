@@ -1614,14 +1614,31 @@
       END IF
 #endif
 
-#if (EM_CORE == 1)
+#if (EM_CORE == 1 && WRFPLUS == 1 )
       IF ( ( model_config_rec%jcdfi_use ).AND. &
            ( model_config_rec%jcdfi_diag .NE. 1 ) ) THEN
-         wrf_err_message = '--- ERROR: If gcdfi_use = 1, then jcdfi_io must also = 1 for that domain '
+         wrf_err_message = '--- ERROR: If jcdfi_use = 1, then jcdfi_io must also = 1 for that domain '
          CALL wrf_message ( wrf_err_message )
          wrf_err_message = '--- Change jcdfi_io in namelist.input '
          CALL wrf_error_fatal ( TRIM( wrf_err_message ) )
       END IF
+      ! derived namelist for packaged a_/g_ variables
+      model_config_rec%mp_physics_plus = 0
+      DO i = 1, model_config_rec % max_dom
+         model_config_rec%mp_physics_plus(i) = model_config_rec%mp_physics(i)
+      ENDDO
+      model_config_rec%cu_used_plus = 0
+      DO i = 1, model_config_rec % max_dom
+         IF ( model_config_rec%cu_physics(i) .NE. NOCUSCHEME ) THEN
+            model_config_rec%cu_used_plus = 1
+         END IF
+      ENDDO
+      model_config_rec%shcu_used_plus = 0
+      DO i = 1, model_config_rec % max_dom
+         IF ( model_config_rec%shcu_physics(i) .NE. NOSHCUSCHEME ) THEN
+            model_config_rec%shcu_used_plus = 1
+         END IF
+      ENDDO
 #endif
 
 !-----------------------------------------------------------------------
