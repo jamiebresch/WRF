@@ -1617,9 +1617,9 @@
 #if (EM_CORE == 1 && WRFPLUS == 1 )
       IF ( ( model_config_rec%jcdfi_use ).AND. &
            ( model_config_rec%jcdfi_diag .NE. 1 ) ) THEN
-         wrf_err_message = '--- ERROR: If jcdfi_use = 1, then jcdfi_io must also = 1 for that domain '
+         wrf_err_message = '--- ERROR: If jcdfi_use = 1, then jcdfi_diag must also = 1 '
          CALL wrf_message ( wrf_err_message )
-         wrf_err_message = '--- Change jcdfi_io in namelist.input '
+         wrf_err_message = '--- Change jcdfi_diag in namelist.input '
          CALL wrf_error_fatal ( TRIM( wrf_err_message ) )
       END IF
       ! derived namelist for packaged a_/g_ variables
