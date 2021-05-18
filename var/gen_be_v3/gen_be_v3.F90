@@ -837,6 +837,7 @@ subroutine get_info(nc_list_file)
          else if ( icount > 1 ) then
             if ( .not. time_lag_ens ) then
                find_match_loop_ens: do ii = ifile-1, 1, -1
+                  if ( iens == nens ) exit find_match_loop_ens
                   if ( valid(ii) ) then
                      if ( file_init_dates(ifile) == file_init_dates(ii) ) then
                         if ( file_valid_dates(ifile) == file_valid_dates(ii) ) then
@@ -1211,7 +1212,7 @@ subroutine compute_pert
 
    integer :: ounit
    integer :: i, j, k
-   integer(i_kind) :: ijk
+   integer(i_kind) :: ijk, ij
    integer :: iv, ie, ic, n, icnt
    integer :: fid, ierr
 
@@ -1290,6 +1291,7 @@ subroutine compute_pert
    nj1 = nj + 1
    nk1 = nk + 1
    ijk = ni * nj * nk
+   ij  = ni * nj
 
    write(stdout,'(a,i4,a,i4,a,i4)') &
       ' Proc ', myproc, ' will read  ens files ', ens_istart, ' - ', ens_iend
@@ -2070,9 +2072,9 @@ subroutine compute_pert
             end if ! ep_format=3
 
             ! gather ep of one variable from all ensemble members and output all members to one file
-            if ( myproc == root ) then
+            !if ( myproc == root ) then
                allocate (globuf(ni, nj, nk, nens))
-            end if
+            !end if
             allocate (locbuf(ni, nj, nk, nens))
 
 #ifdef DM_PARALLEL
@@ -2088,7 +2090,8 @@ subroutine compute_pert
                if ( .not. do_this_var(iv) ) cycle var_loop3
 
                ! initialize to zero for each variable
-               if ( myproc == root ) globuf(:,:,:,:) = 0.0
+               !if ( myproc == root ) globuf(:,:,:,:) = 0.0
+               globuf(:,:,:,:) = 0.0
                locbuf(:,:,:,:) = 0.0
 
                do n = istart_ens(myproc),iend_ens(myproc)
@@ -2096,12 +2099,20 @@ subroutine compute_pert
                end do
 
 #ifdef DM_PARALLEL
-               call mpi_reduce(locbuf,globuf,ijk*nens, &
+               ! loop over k to reduce the message size in mpi_reduce
+               do k = 1, nk
+!               do j = 1, nj
+!               do i = 1, ni
+               call mpi_reduce(locbuf(:,:,k,:),globuf(:,:,k,:),ij*nens, &
+!               call mpi_reduce(locbuf(i,j,k,:),globuf(i,j,k,:),nens, &
                                this_mpi_real,mpi_sum,root,mpi_comm_world,ierr)
                if ( ierr /= 0 ) then
                   write(stdout, '(a, i3)') 'Error mpi_reduce on proc', myproc
                   call mpi_abort(mpi_comm_world,1,ierr)
                end if
+!               end do ! ni loop
+!               end do ! nj loop
+               end do ! nk loop
 #else
                if ( myproc == root ) globuf(:,:,:,:) = locbuf(:,:,:,:)
 #endif
